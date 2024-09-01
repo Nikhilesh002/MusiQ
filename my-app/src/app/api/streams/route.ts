@@ -1,6 +1,8 @@
 import { prismaClient } from "@/lib/db";
 import { CreateStreamSchema } from "@/schemas/CreateStreamSchema";
 import { NextRequest, NextResponse } from "next/server";
+// @ts-ignore
+import youtubesearchapi from "youtube-search-api";
 
 const YT_REGEX=/^(?:(?:https?:)?\/\/)?(?:www\.)?(?:m\.)?(?:youtu(?:be)?\.com\/(?:v\/|embed\/|watch(?:\/|\?v=))|youtu\.be\/)((?:\w|-){11})(?:\S+)?$/;
 
@@ -9,24 +11,36 @@ export async function POST(req:NextRequest,res:NextRequest){
     const data=CreateStreamSchema.parse(await req.json());
 
     const isYt=data.url.match(YT_REGEX);
-    console.log(isYt)
     if(!isYt){
       return NextResponse.json({message:"Wrong url format"},{status:412});
     }
     const match=YT_REGEX.exec(data.url);
     const extractedId=match?match[1]:"";
 
+    // now fetch video's details
+    const res=await youtubesearchapi.GetVideoDetails(extractedId);
+    const thumbnails=res.thumbnail.thumbnails;
+    const defaultThumbnail="https://shorturl.at/kD7Wy";
+
     const stream=await prismaClient.stream.create({
       data:{
         userId:data.creatorId,
         url:data.url,
         extractedId,
-        type:"Youtube"
+        type:"Youtube",
+        title:res.title??"Can't find title",
+        bigImage:thumbnails.length>0 ? thumbnails[thumbnails.length-1].url :"",
+        smallImage: thumbnails.length>1 ? thumbnails[thumbnails.length-2].url : (thumbnails.length>0 ? thumbnails[thumbnails.length-1].url :"")
       }
     });
-    return NextResponse.json({message:"Stream added successfully",extractedId,id:stream.id},{status:201});
+    return NextResponse.json({message:"Stream added successfully",extractedId,
+      id:stream.id,
+      title:res.title??"Can't find title",
+      bigImage:thumbnails.length>0 ? thumbnails[thumbnails.length-1].url :defaultThumbnail,
+      smallImage: thumbnails.length>1 ? thumbnails[thumbnails.length-2].url : (thumbnails.length>0 ? thumbnails[thumbnails.length-1].url :defaultThumbnail)
+    },{status:201});
   } catch (error) {
-    return NextResponse.json({message:"Error while adding stream"},{status:401});
+    return NextResponse.json({message:"Error while adding stream"},{status:411});
   }
 }
 
