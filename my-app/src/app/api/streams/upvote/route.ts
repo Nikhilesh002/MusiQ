@@ -8,13 +8,13 @@ export async function POST(req:NextRequest,res:NextResponse){
     const session=await getServerSession();
     // TODO : replace with id
     if(!session?.user?.email){
-      return NextResponse.json({message:"Unauthorised"},{status:403});
+      return NextResponse.json({message:"Unauthorised"},{status:401});
     }
     const user= await prismaClient.user.findFirst({
       where:{email:session.user.email}
     })
     if(!user){
-      return NextResponse.json({message:"Unauthorised"},{status:403});
+      return NextResponse.json({message:"Unauthorised"},{status:401});
     }
     // now upvote
     const data=UpvoteSchema.parse(await req.json());
