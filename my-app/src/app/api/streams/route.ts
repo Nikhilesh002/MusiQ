@@ -1,11 +1,12 @@
 import { getVideoId, isValidYoutubeUrl } from "@/helpers/youtube";
 import { prismaClient } from "@/lib/db";
 import { CreateStreamSchema } from "@/schemas/CreateStreamSchema";
+import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 // @ts-ignore
 import youtubesearchapi from "youtube-search-api";
 
-export async function POST(req:NextRequest,res:NextResponse){
+export async function POST(req:NextRequest){
   try {
     const data=CreateStreamSchema.parse(await req.json());
     console.log(data)
@@ -48,16 +49,63 @@ export async function POST(req:NextRequest,res:NextResponse){
 }
 
 
-export async function GET(req:NextRequest,res:NextResponse){
+export async function GET(req:NextRequest){
   try {
+    const session=await getServerSession();
+    if(!session?.user?.email){
+      return NextResponse.json({message:"Unauthorised"},{status:203});
+    }
+    const user= await prismaClient.user.findFirst({
+      where:{email:session.user.email}
+    })
+    if(!user){
+      return NextResponse.json({message:"Unauthorised"},{status:404});
+    }
     const creatorId=req.nextUrl.searchParams.get("creatorId");
+    if(!creatorId){
+      return NextResponse.json({message:"No creatorId"},{status:411});
+    }
     const streams=await prismaClient.stream.findMany({
       where:{
-        userId:creatorId??""
+        userId:creatorId
+      },
+      include:{
+        _count:{
+          select:{
+            upvotes:true
+          }
+        },
+        upvotes:{
+          where:{
+            userId:user.id
+          }
+        }
       }
     })
-    return NextResponse.json({streams},{status:200});
+    return NextResponse.json({
+      streams:streams.map(({_count,...rest})=>({
+        ...rest,
+        upvotes:_count.upvotes,
+        hasUpvoted:rest.upvotes.length>0 ? true : false
+      }))
+    },{status:200});
   } catch (error) {
-    return NextResponse.json({message:"Error while getting streams"},{status:411});
+    console.error(error);
+    return NextResponse.json({message:"Error getting streams"},{status:402})
   }
 }
+
+
+// export async function GET(req:NextRequest,res:NextResponse){
+//   try {
+//     const creatorId=req.nextUrl.searchParams.get("creatorId");
+//     const streams=await prismaClient.stream.findMany({
+//       where:{
+//         userId:creatorId??""
+//       }
+//     })
+//     return NextResponse.json({streams},{status:200});
+//   } catch (error) {
+//     return NextResponse.json({message:"Error while getting streams"},{status:411});
+//   }
+// }
