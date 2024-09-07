@@ -17,15 +17,16 @@ export async function POST(req:NextRequest,res:NextResponse){
       return NextResponse.json({message:"Unauthorised"},{status:403});
     }
     // now upvote
-    const data=UpvoteSchema.parse(await req.json());
+    const {streamId}=await req.json();
     await prismaClient.upvote.delete({
       where:{
         userId_streamId:{
           userId:user.id,
-          streamId:data.StreamId
+          streamId
         }
       }
     })
+    return NextResponse.json({message:"Downvoted"},{status:200});
   } catch (error) {
     return NextResponse.json({message:"Error in downvote"},{status:411});
   }

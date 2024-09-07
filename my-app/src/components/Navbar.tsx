@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import { useTheme } from 'next-themes'
-import { Moon, Sun, Search, Menu, X, Music } from 'lucide-react'
+import { Moon, Sun, Menu, X, Music } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import Link from 'next/link'
 import { signIn, signOut, useSession } from 'next-auth/react'
 
 export default function Navbar() {
   const [mounted, setMounted] = useState(false)
-  const { theme, setTheme } = useTheme()
+  const { theme, setTheme } = useTheme()  // TODO theme switch is not working
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const session=useSession();
 
