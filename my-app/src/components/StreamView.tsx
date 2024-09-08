@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import axios from 'axios'
-import { ChevronDown, ChevronUp, Play, Plus, Share, Share2 } from 'lucide-react'
+import { ChevronDown, ChevronUp, Play, Plus, Share2 } from 'lucide-react'
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -29,6 +29,7 @@ interface Video {
 export default function StreamView({creatorId}:{creatorId:string}) {
   const [videoQueue, setVideoQueue] = useState<Video[]>([])
   const [currentVideo, setCurrentVideo] = useState<Video | null>(null)
+  const [preview,setPreview]=useState<string>("");
 
   const refreshStreams = async () => {
     try {
@@ -58,14 +59,16 @@ export default function StreamView({creatorId}:{creatorId:string}) {
   },[])
 
   // TODO get from db
-  const addToQueue = async (e:any) => {
+  const addToQueue = async (e:React.ChangeEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setPreview("");
     const videoUrl=e.target.url.value
     e.target.url.value=""
     if(!isValidYoutubeUrl(videoUrl)){
       toast.error("Enter valid url");
       return;
     }
+    toast.loading("Adding to queue");
     // const videoId = getVideoId(videoUrl);
     try {
       const res = await axios.post("/api/streams",{
@@ -73,9 +76,18 @@ export default function StreamView({creatorId}:{creatorId:string}) {
         url:videoUrl
       })
       console.log(res.data)
+      toast.remove();
       setVideoQueue([...videoQueue, res.data]);
     } catch (error) {
       console.error('Error fetching video details:', error)
+    }
+  }
+
+  const handleUrlChange=(e:React.ChangeEvent<HTMLInputElement>)=>{
+    e.preventDefault();
+    const url=e.target.value;
+    if(isValidYoutubeUrl(url)){
+      setPreview(url);
     }
   }
 
@@ -120,6 +132,7 @@ export default function StreamView({creatorId}:{creatorId:string}) {
           <Input
             name="url"
             type="text"
+            onChange={handleUrlChange}
             placeholder="Enter YouTube video URL"
           />
           <Button type='submit'>
@@ -127,6 +140,19 @@ export default function StreamView({creatorId}:{creatorId:string}) {
           </Button>
         </div>
       </form>
+      
+      {
+        preview!=="" && <div className="aspect-video w-1/2 mx-auto">
+        <iframe
+          width="100%"
+          height="100%"
+          src={`https://www.youtube.com/embed/${getVideoId(preview)}`}
+          frameBorder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        ></iframe>
+      </div>
+      }
 
       <div className="space-y-4">
         <h2 className="text-2xl font-semibold">Now Playing</h2>
