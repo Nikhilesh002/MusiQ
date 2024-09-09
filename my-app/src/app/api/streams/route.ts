@@ -20,6 +20,7 @@ export async function POST(req:NextRequest){
     // now fetch video's details
     const res=await youtubesearchapi.GetVideoDetails(extractedId);
     const thumbnails=res.thumbnail.thumbnails;
+    thumbnails.sort((a:{width:number},b:{width:number})=> a.width<b.width?-1:1);
     const defaultThumbnail="https://shorturl.at/kD7Wy";
 
     const stream=await prismaClient.stream.create({
@@ -33,6 +34,7 @@ export async function POST(req:NextRequest){
         smallImage: thumbnails.length>1 ? thumbnails[thumbnails.length-2].url : (thumbnails.length>0 ? thumbnails[thumbnails.length-1].url :"")
       }
     });
+    
     return NextResponse.json({
       message:"Stream added successfully",
       extractedId,
@@ -52,6 +54,7 @@ export async function POST(req:NextRequest){
 export async function GET(req:NextRequest){
   try {
     const session=await getServerSession();
+    // TODO get rid off db call, use cookie
     if(!session?.user?.email){
       return NextResponse.json({message:"Unauthorised"},{status:203});
     }
@@ -65,29 +68,53 @@ export async function GET(req:NextRequest){
     if(!creatorId){
       return NextResponse.json({message:"No creatorId"},{status:411});
     }
-    const streams=await prismaClient.stream.findMany({
-      where:{
-        userId:creatorId
-      },
-      include:{
-        _count:{
-          select:{
-            upvotes:true
-          }
+    const [streams,activeStream]= await Promise.all([
+      prismaClient.stream.findMany({
+        where:{
+          userId:creatorId,
+          played:false
         },
-        upvotes:{
-          where:{
-            userId:user.id
+        include:{
+          _count:{
+            select:{
+              upvotes:true
+            }
+          },
+          upvotes:{
+            where:{
+              userId:user.id
+            }
           }
         }
+      }),
+      prismaClient.currentStream.findMany({
+        where:{
+          userId:creatorId
+        },
+        include:{
+          Stream:true
+        }
+      })
+    ])
+
+    console.log(
+      {
+        streams:streams.map(({_count,...rest})=>({
+          ...rest,
+          upvotes:_count.upvotes,
+          hasUpvoted:rest.upvotes.length>0 ? true : false
+        })),
+        activeStream
       }
-    })
+  )
+
     return NextResponse.json({
       streams:streams.map(({_count,...rest})=>({
         ...rest,
         upvotes:_count.upvotes,
         hasUpvoted:rest.upvotes.length>0 ? true : false
       }))
+    ,activeStream
     },{status:200});
   } catch (error) {
     console.error(error);

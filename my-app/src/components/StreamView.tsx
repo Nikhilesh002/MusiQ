@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import axios from 'axios'
-import { ChevronDown, ChevronUp, Play, Plus, Share2 } from 'lucide-react'
+import { ChevronDown, ChevronUp, Loader2, Play, Plus, Share2 } from 'lucide-react'
 import Image from 'next/image'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { getVideoId, isValidYoutubeUrl } from '@/helpers/youtube'
 
@@ -26,10 +26,15 @@ interface Video {
   hasUpvoted:boolean
 }
 
-export default function StreamView({creatorId}:{creatorId:string}) {
+export default function StreamView(
+  {creatorId,playVideo=false}:
+  {creatorId:string;playVideo:boolean}
+) {
   const [videoQueue, setVideoQueue] = useState<Video[]>([])
   const [currentVideo, setCurrentVideo] = useState<Video | null>(null)
-  const [preview,setPreview]=useState<string>("");
+  const [inputUrl,setInputUrl]=useState<string>("");
+  const [playNextLoading,setPlayNextLoading]=useState<boolean>(false);
+  const videoPlayerRef=useRef();
 
   const refreshStreams = async () => {
     try {
@@ -38,6 +43,8 @@ export default function StreamView({creatorId}:{creatorId:string}) {
       const videos=res.data.streams;
       videos.sort((a:any, b:any) => b.upvotes  - a.upvotes);
       setVideoQueue(videos);
+      setCurrentVideo(res.data.activeStream[0].Stream)
+      console.log(res.data.activeStream)
     } catch (error) {
       console.error('Error fetching streams:', error);
     }
@@ -51,17 +58,46 @@ export default function StreamView({creatorId}:{creatorId:string}) {
   }, [])
 
   useEffect(()=>{
+
+    window.onYouTubeIframeAPIReady=()=>{
+      console.log("onYouTubeIframeAPIReady got called bruhhh");
+      videoPlayerRef.current = new window.YT.Player('player', {
+        height: '390',
+        width: '640',
+        videoId: currentVideo?.extractedId,
+        playerVars: {
+          'playsinline': 1
+        },
+        events: {
+          'onReady': onPlayerReady,
+          'onStateChange': onPlayerStateChange
+        }
+      })
+    }
+
     // Load the YouTube IFrame API
     const tag = document.createElement('script')
     tag.src = 'https://www.youtube.com/iframe_api'
     const firstScriptTag = document.getElementsByTagName('script')[0]
     firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag)
-  },[])
+
+  },[currentVideo])
+
+  console.log(videoPlayerRef)
+
+  const onPlayerReady=(event:any)=>{
+    console.log("start video")
+    event.target.playVideo();
+  }
+
+  const onPlayerStateChange=(event:any)=>{
+    console.log(event.data);
+  }
 
   // TODO get from db
   const addToQueue = async (e:React.ChangeEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setPreview("");
+    setInputUrl("");
     const videoUrl=e.target.url.value
     e.target.url.value=""
     if(!isValidYoutubeUrl(videoUrl)){
@@ -87,7 +123,7 @@ export default function StreamView({creatorId}:{creatorId:string}) {
     e.preventDefault();
     const url=e.target.value;
     if(isValidYoutubeUrl(url)){
-      setPreview(url);
+      setInputUrl(url);
     }
   }
 
@@ -107,10 +143,24 @@ export default function StreamView({creatorId}:{creatorId:string}) {
     setVideoQueue(newQueue)
   }
 
-  const playNext = () => {
-    if (videoQueue.length > 0) {
-      setCurrentVideo(videoQueue[0])
-      setVideoQueue(videoQueue.slice(1))
+  const playNext =async () => {
+    if (videoQueue.length === 0) {
+      toast.error("Add some music into queue")
+      return;
+    }
+    try {
+      setPlayNextLoading(true);
+      const res=await axios.get("/api/streams/next");
+      setCurrentVideo(res.data.stream);
+      setVideoQueue(videoQueue.filter(video=>video.id!==res.data.stream.id))
+      // setVideoQueue(videoQueue.splice(0,1))
+      // console.log("splice->",videoQueue.splice(0,1))
+      // console.log(res.data.stream);
+    } catch (error) {
+      console.error(error);
+      toast.error("Error adding into queue");
+    } finally{
+      setPlayNextLoading(false);
     }
   }
 
@@ -142,11 +192,11 @@ export default function StreamView({creatorId}:{creatorId:string}) {
       </form>
       
       {
-        preview!=="" && <div className="aspect-video w-1/2 mx-auto">
+        inputUrl!=="" && <div className="aspect-video w-1/2 mx-auto">
         <iframe
           width="100%"
           height="100%"
-          src={`https://www.youtube.com/embed/${getVideoId(preview)}`}
+          src={`https://www.youtube.com/embed/${getVideoId(inputUrl)}`}
           frameBorder="0"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen
@@ -160,26 +210,41 @@ export default function StreamView({creatorId}:{creatorId:string}) {
           <div className='w-full'>
             <h3 className="font-semibold mb-2">{currentVideo.title}</h3>
             <div className="aspect-video w-1/2 mx-auto">
-              <iframe
+              {/*<iframe
                 width="100%"
                 height="100%"
                 src={`https://www.youtube.com/embed/${currentVideo.extractedId}`}
                 frameBorder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
-              ></iframe>
+              ></iframe>*/}
+              <div className="w-1/2">
+                <div id="player"></div>
+              </div>
             </div>
           </div>
         ) : (
           <p>No video currently playing</p>
         )}
-        <Button onClick={playNext}>
-          <Play className="mr-2 h-4 w-4" /> Play Next
-        </Button>
+        {
+          playVideo ? 
+            <Button disabled={playNextLoading} onClick={playNext}>
+                {
+                  playNextLoading ? 
+                    <><Loader2 className="animate-spin mr-2 h-4 w-4" /> Loading</> :
+                    <><Play className="mr-2 h-4 w-4" /> Play Next</>
+                  }
+            </Button>
+          : null
+        }
       </div>
 
       <div className="space-y-4">
-        <h2 className="text-2xl font-semibold">Upcoming Songs</h2>
+        <h2 className="text-2xl font-semibold">
+          {
+            videoQueue.length!==0 ? "Upcoming Songs" : "No Upcoming Songs"
+          }
+        </h2>
         {videoQueue?.map((video, index) => (
           <Card key={video.id}>
             <CardContent className="p-4 flex items-center justify-between">
@@ -210,6 +275,7 @@ export default function StreamView({creatorId}:{creatorId:string}) {
           </Card>
         ))}
       </div>
+
     </div>
   )
 }
