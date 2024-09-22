@@ -18,7 +18,7 @@ export async function POST(req:NextRequest){
     })
 
     if(streamsAddedByUser>=2){
-      return NextResponse.json({message:"Limit reached!! You cant add more than 5 videos"},{status:403});
+      return NextResponse.json({message:"Limit reached!! You cant add more than 2 videos"},{status:202});
     }
 
     const isYt=isValidYoutubeUrl(data.url);
