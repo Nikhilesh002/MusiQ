@@ -1,4 +1,4 @@
-import { prismaClient } from "@/lib/db";
+import prisma from "@/lib/db";
 import { UpvoteSchema } from "@/schemas/UpvoteSchema";
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
@@ -10,7 +10,7 @@ export async function POST(req:NextRequest,res:NextResponse){
     if(!session?.user?.email){
       return NextResponse.json({message:"Unauthorised"},{status:403});
     }
-    const user= await prismaClient.user.findFirst({
+    const user= await prisma.user.findFirst({
       where:{email:session.user.email}
     })
     if(!user){
@@ -18,7 +18,7 @@ export async function POST(req:NextRequest,res:NextResponse){
     }
     // now upvote
     const {streamId}=await req.json();
-    await prismaClient.upvote.delete({
+    await prisma.upvote.delete({
       where:{
         userId_streamId:{
           userId:user.id,

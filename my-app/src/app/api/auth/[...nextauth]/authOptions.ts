@@ -1,4 +1,4 @@
-import { prismaClient } from "@/lib/db";
+import  prisma from "@/lib/db";
 import { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 
@@ -16,7 +16,7 @@ export const authOptions:NextAuthOptions={
         return false;
       }
       try {
-        const existingUser=await prismaClient.user.findFirst({
+        const existingUser=await prisma.user.findFirst({
           where:{
             email:params.user.email
           }
@@ -26,7 +26,7 @@ export const authOptions:NextAuthOptions={
           return true;
         }
 
-        const newUser=await prismaClient.user.create({
+        const newUser=await prisma.user.create({
           data:{
             email:params.user.email,
             provider:"Google"

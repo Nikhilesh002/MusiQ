@@ -1,5 +1,5 @@
 import { getVideoId, isValidYoutubeUrl } from "@/helpers/youtube";
-import { prismaClient } from "@/lib/db";
+import  prisma  from "@/lib/db";
 import { CreateStreamSchema } from "@/schemas/CreateStreamSchema";
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
@@ -10,7 +10,7 @@ export async function POST(req:NextRequest){
   try {
     const data=CreateStreamSchema.parse(await req.json());
 
-    const streamsAddedByUser=await prismaClient.stream.count({
+    const streamsAddedByUser=await prisma.stream.count({
       where:{
         userId:data.creatorId,
         played:false
@@ -33,7 +33,7 @@ export async function POST(req:NextRequest){
     thumbnails.sort((a:{width:number},b:{width:number})=> a.width<b.width?-1:1);
     const defaultThumbnail="https://shorturl.at/kD7Wy";
 
-    const stream=await prismaClient.stream.create({
+    const stream=await prisma.stream.create({
       data:{
         userId:data.creatorId,
         url:data.url,
@@ -69,7 +69,7 @@ export async function GET(req:NextRequest){
     if(!session?.user?.email){
       return NextResponse.json({message:"Unauthorised"},{status:203});
     }
-    const user= await prismaClient.user.findFirst({
+    const user= await prisma.user.findFirst({
       where:{email:session.user.email}
     })
     if(!user){
@@ -80,7 +80,7 @@ export async function GET(req:NextRequest){
       return NextResponse.json({message:"No creatorId"},{status:411});
     }
     const [streams,activeStream]= await Promise.all([
-      prismaClient.stream.findMany({
+      prisma.stream.findMany({
         where:{
           userId:creatorId,
           played:false
@@ -98,7 +98,7 @@ export async function GET(req:NextRequest){
           }
         }
       }),
-      prismaClient.currentStream.findMany({
+      prisma.currentStream.findMany({
         where:{
           userId:creatorId
         },
@@ -137,7 +137,7 @@ export async function GET(req:NextRequest){
 // export async function GET(req:NextRequest,res:NextResponse){
 //   try {
 //     const creatorId=req.nextUrl.searchParams.get("creatorId");
-//     const streams=await prismaClient.stream.findMany({
+//     const streams=await prisma.stream.findMany({
 //       where:{
 //         userId:creatorId??""
 //       }

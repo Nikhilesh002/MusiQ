@@ -1,4 +1,4 @@
-import { prismaClient } from "@/lib/db";
+import prisma from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 
@@ -9,13 +9,13 @@ export async function GET(){
     if(!session?.user?.email){
       return NextResponse.json({message:"Unauthorised"},{status:401});
     }
-    const user= await prismaClient.user.findFirst({
+    const user= await prisma.user.findFirst({
       where:{email:session.user.email}
     })
     if(!user){
       return NextResponse.json({message:"Unauthorised"},{status:401});
     }
-    const mostUpvotedStream=await prismaClient.stream.findFirst({
+    const mostUpvotedStream=await prisma.stream.findFirst({
       where:{
         userId:user.id,
         played:false
@@ -31,7 +31,7 @@ export async function GET(){
     }
 
     const res=await Promise.all([
-      prismaClient.currentStream.upsert({
+      prisma.currentStream.upsert({
         where:{
           userId:user.id
         },
@@ -43,7 +43,7 @@ export async function GET(){
           streamId:mostUpvotedStream.id
         }
       }),
-      prismaClient.stream.update({
+      prisma.stream.update({
         where:{
           id:mostUpvotedStream.id
         },
