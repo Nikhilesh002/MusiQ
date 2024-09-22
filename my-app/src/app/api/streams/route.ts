@@ -11,6 +11,17 @@ export async function POST(req:NextRequest){
     const data=CreateStreamSchema.parse(await req.json());
     console.log(data)
 
+    const streamsAddedByUser=await prismaClient.stream.count({
+      where:{
+        userId:data.creatorId,
+        played:false
+      }
+    })
+
+    if(streamsAddedByUser>=2){
+      return NextResponse.json({message:"Limit reached!! You cant add more than 5 videos"},{status:403});
+    }
+
     const isYt=isValidYoutubeUrl(data.url);
     if(!isYt){
       return NextResponse.json({message:"Wrong url format"},{status:412});
@@ -28,6 +39,7 @@ export async function POST(req:NextRequest){
         userId:data.creatorId,
         url:data.url,
         extractedId,
+        addedById:data.creatorId,
         type:"Youtube",
         title:res.title??"Can't find title",
         bigImage:thumbnails.length>0 ? thumbnails[thumbnails.length-1].url :"",
@@ -97,16 +109,16 @@ export async function GET(req:NextRequest){
       })
     ])
 
-    console.log(
-      {
-        streams:streams.map(({_count,...rest})=>({
-          ...rest,
-          upvotes:_count.upvotes,
-          hasUpvoted:rest.upvotes.length>0 ? true : false
-        })),
-        activeStream
-      }
-  )
+    // console.log(
+    //   {
+    //     streams:streams.map(({_count,...rest})=>({
+    //       ...rest,
+    //       upvotes:_count.upvotes,
+    //       hasUpvoted:rest.upvotes.length>0 ? true : false
+    //     })),
+    //     activeStream
+    //   }
+    // )
 
     return NextResponse.json({
       streams:streams.map(({_count,...rest})=>({

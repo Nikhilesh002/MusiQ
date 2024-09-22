@@ -1,9 +1,17 @@
+"use client"
 import StreamView from "@/components/StreamView";
+import { useSession } from "next-auth/react";
 
-const creatorId="2cdfdff6-f498-4a6f-81fa-64689e2c484d";
-
-function page() {
-  return <StreamView creatorId={creatorId} playVideo={true} />
+ function page() {
+  const {data}=useSession()
+  console.log(data)
+  return (
+    <>
+      {
+        data?.user?.userId  && <StreamView creatorId={data?.user?.userId} playVideo={true} />
+      }
+    </>
+  )
 }
 
 export default page;

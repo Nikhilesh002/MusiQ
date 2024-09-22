@@ -12,13 +12,13 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-
 model User {
   id       String   @id @default(uuid())
   email    String   @unique
   provider Provider
-  streams  Stream[]
+  streams  Stream[] @relation("user")
   Upvote   Upvote[]
+  added    Stream[] @relation("addedBy")
 }
 
 model Stream {
@@ -34,9 +34,11 @@ model Stream {
   playedTimestamp DateTime       @default(now())
   createdAt       DateTime       @default(now())
   upvotes         Upvote[]
-  userId          String
-  user            User           @relation(fields: [userId], references: [id])
   CurrentStream   CurrentStream?
+  userId          String
+  user            User           @relation(fields: [userId], references: [id], name: "user")
+  addedById       String
+  addedBy         User           @relation(fields: [addedById], references: [id], name: "addedBy")
 }
 
 model CurrentStream {

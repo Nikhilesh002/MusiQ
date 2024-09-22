@@ -11,34 +11,52 @@ export const authOptions:NextAuthOptions={
     })
   ],
   callbacks: {
-    async signIn(params:any) {
-      console.log(params)
+    async signIn(params:any){
       if(!params || !params.user || !params.user.email){
         return false;
       }
+      console.log(params)
       try {
-        const isExistingUser=await prismaClient.user.findFirst({
+        const existingUser=await prismaClient.user.findFirst({
           where:{
             email:params.user.email
           }
         });
-        if(!isExistingUser){
-          await prismaClient.user.create({
-            data:{
-              email:params.user.email,
-              provider:"Google"
-            }
-          })
+        if(existingUser){
+          params.user.id=existingUser.id
+          return true;
         }
+
+        const newUser=await prismaClient.user.create({
+          data:{
+            email:params.user.email,
+            provider:"Google"
+          }
+        })
+        params.user.id=newUser.id
         return true
       } catch (error) {
         console.error(error);
         return false
       }
+    },
+    async jwt({ token, user }) {
+      console.log("jwt",{ token, user })
+      if(token && user){
+        token.userId=user?.id
+      }
+      return token
+    },
+    async session({ session, token }) {
+      if(token && session){
+        session.user.userId=token.userId as string;
+        console.log("session",{ session, token })
+      }
+      return session
     }
   },
-  secret:process.env.NEXTAUTH_SECRET
-  // pages:{
-  //   signIn:'/signin'
-  // }
+  secret:process.env.NEXTAUTH_SECRET,
+  session:{
+    strategy:"jwt"
+  }
 }

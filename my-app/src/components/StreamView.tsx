@@ -21,6 +21,7 @@ interface IStreamViewProps{
 
 
 export default function StreamView({creatorId,playVideo=false}:IStreamViewProps) {
+
   const [videoQueue, setVideoQueue] = useState<IVideo[]>([])
   const [currentVideo, setCurrentVideo] = useState<IVideo | null>(null)
   const [inputUrl,setInputUrl]=useState<string>("");
@@ -30,7 +31,6 @@ export default function StreamView({creatorId,playVideo=false}:IStreamViewProps)
   const refreshStreams = async () => {
     try {
       const res = await axios.get(`/api/streams?creatorId=${creatorId}`);
-      console.log(res.data.streams);
       const videos=res.data.streams;
       console.log(videos)
       videos.sort((a:any, b:any) => b.upvotes - a.upvotes);
@@ -48,18 +48,6 @@ export default function StreamView({creatorId,playVideo=false}:IStreamViewProps)
     return clearInterval(intervalId);
   },[creatorId])
 
-  const onPlayerReady = (event: { target: { playVideo: () => void } }) => {
-    console.log("start video",event)
-    event.target.playVideo();
-  };
-
-  const onPlayerStateChange = async (event: { data: number }) => {
-    if (event.data === 0) {
-      await playNext();
-    }
-  };
-
-  // TODO get from db
   const addToQueue = async (e:React.ChangeEvent<HTMLFormElement>) => {
     e.preventDefault();
     setInputUrl("");
@@ -77,10 +65,11 @@ export default function StreamView({creatorId,playVideo=false}:IStreamViewProps)
         url:videoUrl
       })
       console.log(res.data)
-      toast.remove();
       setVideoQueue([...videoQueue, res.data]);
     } catch (error) {
       console.error('Error fetching video details:', error)
+    } finally{
+      toast.remove();
     }
   }
 
@@ -134,6 +123,17 @@ export default function StreamView({creatorId,playVideo=false}:IStreamViewProps)
     toast.success("Copied to clipboard")
     window.navigator.clipboard.writeText(url)
   }
+
+  const onPlayerReady = (event: { target: { playVideo: () => void } }) => {
+    console.log("start video",event)
+    event.target.playVideo();
+  };
+
+  const onPlayerStateChange = async (event: { data: number }) => {
+    if (event.data === 0) {
+      await playNext();
+    }
+  };
 
   const opts = {
     playerVars: {
