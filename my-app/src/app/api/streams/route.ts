@@ -9,7 +9,6 @@ import youtubesearchapi from "youtube-search-api";
 export async function POST(req:NextRequest){
   try {
     const data=CreateStreamSchema.parse(await req.json());
-    console.log(data)
 
     const streamsAddedByUser=await prismaClient.stream.count({
       where:{

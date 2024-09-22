@@ -32,11 +32,9 @@ export default function StreamView({creatorId,playVideo=false}:IStreamViewProps)
     try {
       const res = await axios.get(`/api/streams?creatorId=${creatorId}`);
       const videos=res.data.streams;
-      console.log(videos)
       videos.sort((a:any, b:any) => b.upvotes - a.upvotes);
       setVideoQueue(videos);
       setCurrentVideo(res.data.activeStream[0].Stream)
-      console.log(res.data.activeStream)
     } catch (error) {
       console.error('Error fetching streams:', error);
     }
@@ -64,7 +62,6 @@ export default function StreamView({creatorId,playVideo=false}:IStreamViewProps)
         creatorId:creatorId,
         url:videoUrl
       })
-      console.log(res.data)
       setVideoQueue([...videoQueue, res.data]);
     } catch (error) {
       console.error('Error fetching video details:', error)
@@ -82,10 +79,8 @@ export default function StreamView({creatorId,playVideo=false}:IStreamViewProps)
   }
 
   const handleVote =async (index: number,voteType:"upvote"|"downvote") => {
-    console.log(voteType)
     const newQueue = [...videoQueue]
     const res=await axios.post(`/api/streams/${voteType}`,{streamId:newQueue[index].id});
-    console.log(res)
 
     if(res.status===200){
       newQueue[index].hasUpvoted= voteType==="downvote" ? false : true ;
@@ -93,7 +88,6 @@ export default function StreamView({creatorId,playVideo=false}:IStreamViewProps)
       toast.success(res.data.message)
     }
     newQueue.sort((a, b) => b.upvotes  - a.upvotes)
-    console.log(newQueue)
     setVideoQueue(newQueue)
   }
 
@@ -108,8 +102,6 @@ export default function StreamView({creatorId,playVideo=false}:IStreamViewProps)
       setCurrentVideo(res.data.stream);
       setVideoQueue(videoQueue.filter(video=>video.id!==res.data.stream.id))
       // setVideoQueue(videoQueue.splice(0,1))
-      // console.log("splice->",videoQueue.splice(0,1))
-      // console.log(res.data.stream);
     } catch (error) {
       console.error(error);
       toast.error("Error adding into queue");
@@ -125,7 +117,6 @@ export default function StreamView({creatorId,playVideo=false}:IStreamViewProps)
   }
 
   const onPlayerReady = (event: { target: { playVideo: () => void } }) => {
-    console.log("start video",event)
     event.target.playVideo();
   };
 

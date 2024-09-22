@@ -26,7 +26,6 @@ export async function GET(){
         }
       }
     })
-    console.log("mostUpvotedStream---",mostUpvotedStream);
     if(!mostUpvotedStream){
       return NextResponse.json({message:"No streams"},{status:404});
     }
@@ -54,8 +53,6 @@ export async function GET(){
         }
       })
     ])
-
-    console.log("res--",res)
 
     return NextResponse.json({stream:mostUpvotedStream},{status:200});
   } catch (error:any) {

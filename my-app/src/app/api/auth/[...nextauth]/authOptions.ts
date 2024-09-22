@@ -15,7 +15,6 @@ export const authOptions:NextAuthOptions={
       if(!params || !params.user || !params.user.email){
         return false;
       }
-      console.log(params)
       try {
         const existingUser=await prismaClient.user.findFirst({
           where:{
@@ -41,7 +40,6 @@ export const authOptions:NextAuthOptions={
       }
     },
     async jwt({ token, user }) {
-      console.log("jwt",{ token, user })
       if(token && user){
         token.userId=user?.id
       }
@@ -50,7 +48,6 @@ export const authOptions:NextAuthOptions={
     async session({ session, token }) {
       if(token && session){
         session.user.userId=token.userId as string;
-        console.log("session",{ session, token })
       }
       return session
     }
