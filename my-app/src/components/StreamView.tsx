@@ -8,30 +8,21 @@ import { ChevronDown, ChevronUp, Loader2, Play, Plus, Share2 } from 'lucide-reac
 import Image from 'next/image'
 import { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
+import { IVideo } from "@/types/videoInterface"
 import { getVideoId, isValidYoutubeUrl } from '@/helpers/youtube'
+import YouTube from 'react-youtube';
 
-const REFERESH_TIMEINTERVAL_MS= 10 * 1000;
+const REFERESH_TIMEINTERVAL_MS= 100 * 1000;
 
-interface Video {
-  id: string
-  title: string
-  upvotes: number
-  type: "Youtube" | "Spotify",
-  extractedId: string,
-  url: string,
-  smallImage: string,
-  bigImage: string,
-  active: boolean,
-  userId: string,
-  hasUpvoted:boolean
+interface IStreamViewProps{
+  creatorId:string;
+  playVideo:boolean
 }
 
-export default function StreamView(
-  {creatorId,playVideo=false}:
-  {creatorId:string;playVideo:boolean}
-) {
-  const [videoQueue, setVideoQueue] = useState<Video[]>([])
-  const [currentVideo, setCurrentVideo] = useState<Video | null>(null)
+
+export default function StreamView({creatorId,playVideo=false}:IStreamViewProps) {
+  const [videoQueue, setVideoQueue] = useState<IVideo[]>([])
+  const [currentVideo, setCurrentVideo] = useState<IVideo | null>(null)
   const [inputUrl,setInputUrl]=useState<string>("");
   const [playNextLoading,setPlayNextLoading]=useState<boolean>(false);
   const videoPlayerRef=useRef();
@@ -41,7 +32,8 @@ export default function StreamView(
       const res = await axios.get(`/api/streams?creatorId=${creatorId}`);
       console.log(res.data.streams);
       const videos=res.data.streams;
-      videos.sort((a:any, b:any) => b.upvotes  - a.upvotes);
+      console.log(videos)
+      videos.sort((a:any, b:any) => b.upvotes - a.upvotes);
       setVideoQueue(videos);
       setCurrentVideo(res.data.activeStream[0].Stream)
       console.log(res.data.activeStream)
@@ -52,47 +44,20 @@ export default function StreamView(
 
   useEffect(() => {
     refreshStreams();
-    setInterval(()=>{
-      refreshStreams();
-    },REFERESH_TIMEINTERVAL_MS);
-  }, [])
+    const intervalId=setInterval(refreshStreams,REFERESH_TIMEINTERVAL_MS);
+    return clearInterval(intervalId);
+  },[creatorId])
 
-  useEffect(()=>{
-
-    window.onYouTubeIframeAPIReady=()=>{
-      console.log("onYouTubeIframeAPIReady got called bruhhh");
-      videoPlayerRef.current = new window.YT.Player('player', {
-        height: '390',
-        width: '640',
-        videoId: currentVideo?.extractedId,
-        playerVars: {
-          'playsinline': 1
-        },
-        events: {
-          'onReady': onPlayerReady,
-          'onStateChange': onPlayerStateChange
-        }
-      })
-    }
-
-    // Load the YouTube IFrame API
-    const tag = document.createElement('script')
-    tag.src = 'https://www.youtube.com/iframe_api'
-    const firstScriptTag = document.getElementsByTagName('script')[0]
-    firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag)
-
-  },[currentVideo])
-
-  console.log(videoPlayerRef)
-
-  const onPlayerReady=(event:any)=>{
-    console.log("start video")
+  const onPlayerReady = (event: { target: { playVideo: () => void } }) => {
+    console.log("start video",event)
     event.target.playVideo();
-  }
+  };
 
-  const onPlayerStateChange=(event:any)=>{
-    console.log(event.data);
-  }
+  const onPlayerStateChange = async (event: { data: number }) => {
+    if (event.data === 0) {
+      await playNext();
+    }
+  };
 
   // TODO get from db
   const addToQueue = async (e:React.ChangeEvent<HTMLFormElement>) => {
@@ -170,6 +135,12 @@ export default function StreamView(
     window.navigator.clipboard.writeText(url)
   }
 
+  const opts = {
+    playerVars: {
+      autoplay: 1,
+    },
+  };
+
   return (
     <div className="container mx-auto p-4 space-y-6">
       <div className="flex justify-between ps-2">
@@ -210,17 +181,7 @@ export default function StreamView(
           <div className='w-full'>
             <h3 className="font-semibold mb-2">{currentVideo.title}</h3>
             <div className="aspect-video w-1/2 mx-auto">
-              {/*<iframe
-                width="100%"
-                height="100%"
-                src={`https://www.youtube.com/embed/${currentVideo.extractedId}`}
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              ></iframe>*/}
-              <div className="w-1/2">
-                <div id="player"></div>
-              </div>
+              <YouTube className="" ref={videoPlayerRef} videoId={currentVideo.extractedId} opts={opts} onStateChange={onPlayerStateChange} onReady={onPlayerReady} />
             </div>
           </div>
         ) : (
