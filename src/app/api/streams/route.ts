@@ -72,6 +72,7 @@ export async function POST(req:NextRequest){
       upvotes:0
     },{status:201});
   } catch (error) {
+    console.error(error)
     return NextResponse.json({message:"Error while adding stream"},{status:411});
   }
 }

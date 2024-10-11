@@ -31,6 +31,7 @@ export async function POST(req:NextRequest,res:NextResponse){
     })
     return NextResponse.json({message:"Downvoted"},{status:200});
   } catch (error) {
+    console.error(error)
     return NextResponse.json({message:"Error in downvote"},{status:411});
   }
 }
