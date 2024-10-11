@@ -6,6 +6,8 @@ import { NextRequest, NextResponse } from "next/server";
 // @ts-ignore
 import youtubesearchapi from "youtube-search-api";
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(req:NextRequest){
   try {
     const data=CreateStreamSchema.parse(await req.json());

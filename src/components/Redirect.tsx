@@ -10,7 +10,7 @@ function Redirect() {
     if(session?.status==="authenticated"){
       router.push('/dashboard');
     }
-  },[session])
+  },[session,router])
   return null;
 }
 

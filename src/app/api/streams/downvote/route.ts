@@ -3,6 +3,9 @@ import { UpvoteSchema } from "@/schemas/UpvoteSchema";
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 
+export const dynamic = 'force-dynamic'
+
+
 export async function POST(req:NextRequest,res:NextResponse){
   try {
     const session=await getServerSession();
