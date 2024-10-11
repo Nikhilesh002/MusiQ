@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import axios from 'axios'
 import { ChevronDown, ChevronUp, Loader2, Play, Plus, Share2 } from 'lucide-react'
 import Image from 'next/image'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { IVideo } from "@/types/videoInterface"
 import { getVideoId, isValidYoutubeUrl } from '@/helpers/youtube'
@@ -28,7 +28,7 @@ export default function StreamView({creatorId,playVideo=false}:IStreamViewProps)
   const [playNextLoading,setPlayNextLoading]=useState<boolean>(false);
   const videoPlayerRef=useRef();
 
-  const refreshStreams = async () => {
+  const refreshStreams = useCallback(async () => {
     try {
       const res = await axios.get(`/api/streams?creatorId=${creatorId}`);
       const videos=res.data.streams;
@@ -38,12 +38,12 @@ export default function StreamView({creatorId,playVideo=false}:IStreamViewProps)
     } catch (error) {
       console.error('Error fetching streams:', error);
     }
-  };
+  },[creatorId])
 
   useEffect(() => {
     refreshStreams();
     setInterval(refreshStreams,REFERESH_TIMEINTERVAL_MS);
-  },[creatorId])
+  },[refreshStreams])
 
   const addToQueue = async (e:React.ChangeEvent<HTMLFormElement>) => {
     e.preventDefault();
