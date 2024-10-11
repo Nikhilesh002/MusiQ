@@ -12,9 +12,22 @@ export async function POST(req:NextRequest){
   try {
     const data=CreateStreamSchema.parse(await req.json());
 
+    const session=await getServerSession();
+    // TODO get rid off db call, use cookie
+    if(!session?.user?.email){
+      return NextResponse.json({message:"Unauthorised"},{status:203});
+    }
+
+    const currUser= await prisma.user.findFirst({
+      where:{
+        email:session.user.email
+      }
+    })
+
     const streamsAddedByUser=await prisma.stream.count({
       where:{
         userId:data.creatorId,
+        addedById:currUser?.id,
         played:false
       }
     })
@@ -40,7 +53,7 @@ export async function POST(req:NextRequest){
         userId:data.creatorId,
         url:data.url,
         extractedId,
-        addedById:data.creatorId,
+        addedById:currUser?.id ?? "",
         type:"Youtube",
         title:res.title??"Can't find title",
         bigImage:thumbnails.length>0 ? thumbnails[thumbnails.length-1].url :"",
