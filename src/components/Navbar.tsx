@@ -6,52 +6,68 @@ import { Moon, Sun, Menu, X, Music } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import Link from 'next/link'
 import { signIn, signOut, useSession } from 'next-auth/react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 export default function Navbar() {
-  const [mounted, setMounted] = useState(false)
-  const { theme, setTheme } = useTheme()  // TODO theme switch is not working
+  const { setTheme } = useTheme()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const session=useSession();
-
-  useEffect(() => setMounted(true), [])
-
-  if (!mounted) return null
 
   return (
     <nav className="bg-white dark:bg-gray-900 sticky top-0 z-50 shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          <div className="flex items-center">
-            <Link href="/" className="flex-shrink-0">
-              <Music className="h-8 w-8 text-purple-600 dark:text-purple-400 inline-block pb-1" />
-              <span className="ml-2 text-2xl font-bold text-gray-900 dark:text-white">Musiq</span>
-            </Link>
-            <div className="hidden md:block ml-10">
-              <div className="flex items-baseline space-x-4">
-                <Link href="#" className="text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200">Discover</Link>
-                <Link href="#" className="text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200">Library</Link>
-                <Link href="#" className="text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200">For Creators</Link>
+        <div className="flex items-center space-x-5 h-16">
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center">
+              <Link href="/" className="flex-shrink-0">
+                <Music className="h-8 w-8 text-purple-600 dark:text-purple-400 inline-block pb-1" />
+                <span className="ml-2 text-2xl font-bold text-gray-900 dark:text-white">Musiq</span>
+              </Link>
+              <div className="hidden md:block ml-10">
+                <div className="flex items-baseline space-x-4">
+                  <Link href="#" className="text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200">Discover</Link>
+                  <Link href="#" className="text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200">Library</Link>
+                  <Link href="#" className="text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200">For Creators</Link>
+                </div>
               </div>
             </div>
+            <div className="">
+              {
+                (session && session.status==="authenticated") ?
+                <Button onClick={()=>signOut()}>SignOut</Button> :
+                <Button onClick={()=>signIn()}>SignIn</Button>
+              }
+            </div>
           </div>
-          <div className="hidden md:flex items-center">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="ml-4"
-            >
-              {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-              <span className="sr-only">Toggle theme</span>
-            </Button>
+
+          <div className="hidden md:flex">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                  <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                  <span className="sr-only">Toggle theme</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setTheme("light")}>
+                  Light
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme("dark")}>
+                  Dark
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme("system")}>
+                  System
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
-          <div className="">
-            {
-              (session && session.status==="authenticated") ?
-              <Button onClick={()=>signOut()}>SignOut</Button> :
-              <Button onClick={()=>signIn()}>SignIn</Button>
-            }
-          </div>
+          
           <div className="md:hidden flex items-center">
             <Button
               variant="ghost"
@@ -71,16 +87,27 @@ export default function Navbar() {
             <Link href="#" className="text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 block px-3 py-2 rounded-md text-base font-medium transition-colors duration-200">Library</Link>
             <Link href="#" className="text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 block px-3 py-2 rounded-md text-base font-medium transition-colors duration-200">For Creators</Link>
           </div>
-          <div className="px-4 py-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="mt-4 w-full justify-start"
-            >
-              {theme === 'dark' ? <Sun className="h-5 w-5 mr-2" /> : <Moon className="h-5 w-5 mr-2" />}
-              {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
-            </Button>
+          <div className="">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                  <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                  <span className="sr-only">Toggle theme</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setTheme("light")}>
+                  Light
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme("dark")}>
+                  Dark
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme("system")}>
+                  System
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       )}

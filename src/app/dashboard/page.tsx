@@ -2,7 +2,7 @@
 import StreamView from "@/components/StreamView";
 import { useSession } from "next-auth/react";
 
- function page() {
+ function Page() {
   const {data}=useSession()
   return (
     <>
@@ -13,4 +13,4 @@ import { useSession } from "next-auth/react";
   )
 }
 
-export default page;
+export default Page;

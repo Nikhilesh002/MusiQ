@@ -144,9 +144,9 @@ export default function StreamView({creatorId,playVideo=false}:IStreamViewProps)
 
   return (
     <div className="container mx-auto p-4 space-y-6">
-      <div className="flex space-x-6">
+      <div className="flex space-x-24">
 
-        <div className="w-3/5 space-y-4">
+        <div className="w-2/3 space-y-4">
           <h2 className="text-2xl font-semibold">
             {
               videoQueue.length!==0 ? "Upcoming Songs" : "No Upcoming Songs"
@@ -183,10 +183,10 @@ export default function StreamView({creatorId,playVideo=false}:IStreamViewProps)
           ))}
         </div>
 
-        <div className="w-2/5">
+        <div className="w-1/3">
           <div className="flex justify-between ps-2">
             <h1 className="text-3xl font-bold mb-6">Song Voting System</h1>
-            <Button onClick={copyToClipboard} variant="ghost" className="px-1.5 bg-black text-white"><Share2 className="h-4 w-4 me-1 ms-0.5"/>Share</Button>
+            <Button onClick={copyToClipboard} className="px-1.5"><Share2 className="h-4 w-4 me-1 ms-0.5"/>Share</Button>
           </div>
           
           <form action="" onSubmit={addToQueue}>
