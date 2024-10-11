@@ -44,9 +44,12 @@ export async function POST(req:NextRequest){
 
     // now fetch video's details
     const res=await youtubesearchapi.GetVideoDetails(extractedId);
-    const thumbnails=res.thumbnail.thumbnails;
+    const thumbnails=res?.thumbnail?.thumbnails || [];
     thumbnails.sort((a:{width:number},b:{width:number})=> a.width<b.width?-1:1);
     const defaultThumbnail="https://shorturl.at/kD7Wy";
+
+    console.log(thumbnails)
+    const len= thumbnails.length;
 
     const stream=await prisma.stream.create({
       data:{
@@ -56,8 +59,8 @@ export async function POST(req:NextRequest){
         addedById:currUser?.id ?? "",
         type:"Youtube",
         title:res.title??"Can't find title",
-        bigImage:thumbnails.length>0 ? thumbnails[thumbnails.length-1].url :"",
-        smallImage: thumbnails.length>1 ? thumbnails[thumbnails.length-2].url : (thumbnails.length>0 ? thumbnails[thumbnails.length-1].url :"")
+        bigImage:len>0 ? thumbnails[len-1].url :"",
+        smallImage: len>1 ? thumbnails[len-2].url : (len>0 ? thumbnails[len-1].url :"")
       }
     });
     
@@ -66,8 +69,8 @@ export async function POST(req:NextRequest){
       extractedId,
       id:stream.id,
       title:res.title??"Can't find title",
-      bigImage:thumbnails.length>0 ? thumbnails[thumbnails.length-1].url :defaultThumbnail,
-      smallImage: thumbnails.length>1 ? thumbnails[thumbnails.length-2].url : (thumbnails.length>0 ? thumbnails[thumbnails.length-1].url :defaultThumbnail),
+      bigImage:len>0 ? thumbnails[len-1].url :defaultThumbnail,
+      smallImage: len>1 ? thumbnails[len-2].url : (len>0 ? thumbnails[len-1].url :defaultThumbnail),
       hasUpvoted:false,
       upvotes:0
     },{status:201});
